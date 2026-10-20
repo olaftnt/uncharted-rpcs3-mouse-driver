@@ -18,7 +18,7 @@ from ctypes import wintypes
 from pathlib import Path
 
 APP_NAME = "UC3 Mouse Aim"
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 PATCH_VERSION = "1.0.0"         # bump only when PATCH_WRITES change
 
 # --------------------------------------------------------------------------------------------------
@@ -323,15 +323,13 @@ def enable_patch(rpcs3: Path) -> bool:
     return True
 
 
-def ensure_patch(rpcs3: Path) -> bool:
-    """Install and enable the patch. Returns True on success; prints the error otherwise."""
+def ensure_patch(rpcs3: Path) -> str:
+    """Install and enable the patch. Returns "changed", "ok" or "error: <reason>"."""
     try:
-        install_patch(rpcs3)
-        enable_patch(rpcs3)
-        return True
+        changed = install_patch(rpcs3) | enable_patch(rpcs3)    # both always run
+        return "changed" if changed else "ok"
     except Exception as e:
-        print(f"  ! Could not write the RPCS3 patch files: {e}")
-        return False
+        return f"error: {e}"
 
 
 # --------------------------------------------------------------------------------------------------
@@ -511,7 +509,6 @@ class MouseFeeder:
         if cls._instance is None:
             cls._instance = cls(settings)
         cls._instance.s = settings
-        cls._instance.events = 0
         return cls._instance
 
     def __init__(self, settings: dict):
@@ -521,7 +518,6 @@ class MouseFeeder:
         self.acc_x = self.acc_y = 0.0
         self.focused = False
         self.ads = False
-        self.events = 0
         self.cursor = CursorHider()
         self._proc = WNDPROC(self._wndproc)
         threading.Thread(target=self._loop, daemon=True).start()
@@ -558,7 +554,6 @@ class MouseFeeder:
                             self.acc_x += dx * k * ex
                             self.acc_y += (-dy if s["invert_y"] else dy) * k * ey
                             self.mem.write_totals(round(self.acc_x), round(self.acc_y))
-                            self.events += 1
             return 0
         return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
 
@@ -600,68 +595,102 @@ class MouseFeeder:
 # --------------------------------------------------------------------------------------------------
 # Console UI
 # --------------------------------------------------------------------------------------------------
+class C:
+    """ANSI colours; left empty when the console has no VT support (output stays plain)."""
+    RESET = BOLD = DIM = GREEN = YELLOW = RED = CYAN = ""
+
+
+def init_console():
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+    kernel32.GetStdHandle.restype = wintypes.HANDLE
+    h = kernel32.GetStdHandle(-11)
+    mode = wintypes.DWORD()
+    if kernel32.GetConsoleMode(h, ctypes.byref(mode)) and kernel32.SetConsoleMode(h, mode.value | 0x0004):
+        C.RESET, C.BOLD, C.DIM = "\033[0m", "\033[1m", "\033[2m"
+        C.GREEN, C.YELLOW, C.RED, C.CYAN = "\033[92m", "\033[93m", "\033[91m", "\033[96m"
+    os.system(f"title {APP_NAME} {APP_VERSION}")
+
+
 def clear():
     os.system("cls")
 
 
 def header():
-    print("=" * 66)
-    print(f"  {APP_NAME} {APP_VERSION}  -  Uncharted 3 on RPCS3")
-    print("=" * 66)
+    print()
+    print(f"  {C.BOLD}{C.CYAN}UC3 MOUSE AIM{C.RESET}  {C.DIM}v{APP_VERSION}{C.RESET}")
+    print(f"  {C.DIM}Raw mouse aiming for Uncharted 3 on RPCS3{C.RESET}")
+    print(f"  {C.DIM}{'─' * 60}{C.RESET}")
 
 
-INSTRUCTIONS = f"""
-  HOW TO SET IT UP
-  ----------------
-  1. Install the Uncharted 3 update 1.19 in RPCS3 (the patch targets that executable).
-  2. Close all running RPCS3 windows.
-  3. Put this program next to rpcs3.exe and run it. It installs the "{PATCH_NAME}"
-     patch and enables it in the RPCS3 config. If the game is ever started without
-     the patch, the program enables it again and asks you to restart RPCS3.
-  4. Start RPCS3 and load the game. Check that the patch is ticked in
-     Manage > Game Patches.
-  5. Choose "Start mouse aim" in this menu. The status line shows ACTIVE while
-     the game window has focus. Leave this window open while you play.
+def pause(text="Press Enter to go back"):
+    input(f"\n  {C.DIM}{text}{C.RESET}")
 
-  CONTROLS
-  --------
-  - Mouse movement: camera / aiming.
-  - Left mouse button = R1 (shoot), right mouse button = L1 (aim) - set these in
-    RPCS3 > Pads (Keyboard handler: R1 = Mouse Left, L1 = Mouse Right). The program
-    uses the right button to know when you are aiming (ADS multiplier).
-  - The cursor is hidden and kept in the middle of the game window while it has focus.
-  - Press Ctrl+C in this window to stop and return to the menu.
 
-  SENSITIVITY vs DPI
-  ------------------
-  DPI is a property of your mouse hardware. Sensitivity is how far the camera turns
-  for a given hand movement. The program combines both so that the same sensitivity
-  value always means the same physical feel (cm per full turn): if you change the DPI
-  on your mouse, just enter the new DPI here and the feel stays the same, only finer.
-  The settings page shows the resulting centimetres per 360 degrees.
+def game_status() -> str:
+    """no-rpcs3 | no-access | no-game | not-loaded | other | active"""
+    pid, _ = find_process()
+    if not pid:
+        return "no-rpcs3"
+    mem = GameMemory(pid)
+    try:
+        if not mem.h:
+            return "no-access"
+        return "no-game" if mem.base is None else mem.patch_state()
+    finally:
+        mem.close()
 
-  FREE LOOK / ADS MULTIPLIERS
-  ---------------------------
-  Both axes and both modes are already equalised: one count turns the camera by the
-  same angle horizontally and vertically, in free look and while aiming. Use the
-  multipliers if you prefer aiming to be slower (e.g. ADS 0.8) or free look faster.
 
-  WHAT IS REMOVED
-  ---------------
-  Stick deadzones, response curves, turn acceleration, axis snapping, aim assist and
-  aim slowdown, camera position smoothing. Mouse input is applied once per frame and
-  scaled by the game's own frame time, so frame rate does not change sensitivity.
-  Recommended extra patch in RPCS3: "Disable Camera Shake".
+def print_status(rpcs3: Path, patch: str, s: dict):
+    if patch.startswith("error"):
+        patch_text = f"{C.RED}! Could not write the patch files ({patch[7:]}){C.RESET}"
+    else:
+        patch_text = f"{C.GREEN}✓ Installed and enabled{C.RESET}"
+    state = game_status()
+    colour, mark, text = {
+        "no-rpcs3": (C.DIM, "○", "RPCS3 is not running"),
+        "no-game": (C.DIM, "○", "RPCS3 is open, game not started"),
+        "active": (C.GREEN, "●", "Running with the patch"),
+        "not-loaded": (C.YELLOW, "●", "Running without the patch - restart RPCS3 and load the game"),
+        "other": (C.RED, "●", "Another mouse patch is active - disable it and restart"),
+        "no-access": (C.RED, "!", "Cannot read RPCS3 - run this program as administrator"),
+    }[state]
+    print()
+    print(f"  {C.DIM}RPCS3{C.RESET}     {rpcs3}")
+    print(f"  {C.DIM}Patch{C.RESET}     {patch_text}")
+    print(f"  {C.DIM}Game{C.RESET}      {colour}{mark} {text}{C.RESET}")
+    print(f"  {C.DIM}Mouse{C.RESET}     sensitivity {s['sensitivity']:g} · {s['dpi']} DPI · {cm_per_360(s):.1f} cm/360")
+
+
+HELP = """
+  {b}HELP{r}
+
+  • Keep this window open while you play, with "Start mouse aim" running.
+
+  • The "{patch}" patch must be enabled in RPCS3 (Manage > Game Patches).
+    This program installs and enables it for you.
+
+  • RPCS3 applies patches when the game starts. If the status says the game
+    runs without the patch, close RPCS3, start it again and load the game.
+
+  • Map L1 (aim) to the right mouse button in RPCS3's pad settings. The program
+    uses that button to switch to the aiming sensitivity.
+
+  • Mouse aim works while the game window is focused. The cursor is hidden
+    there. Press Ctrl+C in this window to stop.
 """
 
 
-def show_instructions():
-    clear(); header(); print(INSTRUCTIONS)
-    input("  Press Enter to return to the menu...")
+def show_help():
+    clear(); header()
+    print(HELP.format(b=C.BOLD, r=C.RESET, patch=PATCH_NAME))
+    pause()
 
 
 def ask_float(prompt: str, current: float, lo: float, hi: float) -> float:
-    raw = input(f"  {prompt} [{current}]: ").strip().replace(",", ".")
+    raw = input(f"\n  {prompt} ({lo:g} - {hi:g}) [{current:g}]: ").strip().replace(",", ".")
     if not raw:
         return current
     try:
@@ -670,51 +699,64 @@ def ask_float(prompt: str, current: float, lo: float, hi: float) -> float:
             return v
     except ValueError:
         pass
-    print(f"  ! Enter a number between {lo} and {hi}.")
+    print(f"  {C.RED}Enter a number between {lo:g} and {hi:g}.{C.RESET}")
     time.sleep(1.2)
     return current
 
 
 def settings_menu(s: dict):
+    onoff = lambda v: f"{C.GREEN}on{C.RESET}" if v else f"{C.DIM}off{C.RESET}"
     while True:
         clear(); header()
         print(f"""
-  SETTINGS
-  1) Sensitivity              : {s['sensitivity']}
-  2) Mouse DPI                : {s['dpi']}
-  3) Free-look multiplier     : {s['free_look_multiplier']}
-  4) ADS (aiming) multiplier  : {s['ads_multiplier']}
-  5) Invert vertical axis     : {'yes' if s['invert_y'] else 'no'}
-  6) Hide cursor in game      : {'yes' if s['hide_cursor'] else 'no'}
-  7) Back
+  {C.BOLD}SETTINGS{C.RESET}
 
-  Result: free look {cm_per_360(s):.1f} cm/360, aiming {cm_per_360(s, True):.1f} cm/360
-          ({degrees_per_count(s):.4f} / {degrees_per_count(s, True):.4f} degrees per count)
-""")
-        c = input("  Choose: ").strip()
+  {C.CYAN}1{C.RESET}  Sensitivity            {s['sensitivity']:g}
+  {C.CYAN}2{C.RESET}  Mouse DPI              {s['dpi']}
+  {C.CYAN}3{C.RESET}  Free-look multiplier   {s['free_look_multiplier']:g}
+  {C.CYAN}4{C.RESET}  Aiming multiplier      {s['ads_multiplier']:g}
+  {C.CYAN}5{C.RESET}  Invert Y               {onoff(s['invert_y'])}
+  {C.CYAN}6{C.RESET}  Hide cursor in game    {onoff(s['hide_cursor'])}
+  {C.CYAN}0{C.RESET}  Back
+
+  Free look {C.BOLD}{cm_per_360(s):.1f} cm/360{C.RESET}  ·  Aiming {C.BOLD}{cm_per_360(s, True):.1f} cm/360{C.RESET}
+  {C.DIM}Set DPI to your mouse's DPI: the same sensitivity then feels the same at any DPI.{C.RESET}""")
+        c = input(f"\n  Select: ").strip()
         if c == "1":
-            s["sensitivity"] = ask_float("Sensitivity (0.05 - 20)", s["sensitivity"], 0.05, 20)
+            s["sensitivity"] = ask_float("Sensitivity", s["sensitivity"], 0.05, 20)
         elif c == "2":
-            s["dpi"] = int(ask_float("Mouse DPI (100 - 32000)", s["dpi"], 100, 32000))
+            s["dpi"] = int(ask_float("Mouse DPI", s["dpi"], 100, 32000))
         elif c == "3":
-            s["free_look_multiplier"] = ask_float("Free-look multiplier (0.1 - 5)", s["free_look_multiplier"], 0.1, 5)
+            s["free_look_multiplier"] = ask_float("Free-look multiplier", s["free_look_multiplier"], 0.1, 5)
         elif c == "4":
-            s["ads_multiplier"] = ask_float("ADS multiplier (0.1 - 5)", s["ads_multiplier"], 0.1, 5)
+            s["ads_multiplier"] = ask_float("Aiming multiplier", s["ads_multiplier"], 0.1, 5)
         elif c == "5":
             s["invert_y"] = not s["invert_y"]
         elif c == "6":
             s["hide_cursor"] = not s["hide_cursor"]
-        elif c == "7" or c == "":
+        elif c in ("0", ""):
             save_settings(s)
             return
         save_settings(s)
 
 
+def status_line(text: str):
+    """Rewrite the single status line in place."""
+    if C.RESET:
+        sys.stdout.write("\r\033[K  " + text)
+    else:
+        sys.stdout.write("\r  " + text.ljust(76))
+    sys.stdout.flush()
+
+
 def run_aim(s: dict, rpcs3: Path):
     clear(); header()
-    print("\n  Mouse aim is starting. Press Ctrl+C in this window to stop.\n")
+    print(f"\n  {C.BOLD}MOUSE AIM{C.RESET}   {C.DIM}Press Ctrl+C to stop{C.RESET}\n")
+    if C.RESET:
+        sys.stdout.write("\033[?25l")          # hide the console caret while the status line updates
     feeder = MouseFeeder.get(s)
-    mem, last_state, last_line = None, None, 0.0
+    mem, last_state = None, None
+    fps, fps_frames, fps_time = 0, 0, time.time()
     try:
         while True:
             pid, _ = find_process()
@@ -732,76 +774,74 @@ def run_aim(s: dict, rpcs3: Path):
                 state = "no-access" if no_access else "no-game"
             else:
                 state = mem.patch_state()
+
             if state != last_state:
-                print()
-                if state == "no-rpcs3":
-                    print("  Waiting for RPCS3 ...")
-                elif state == "no-access":
-                    print("  RPCS3 is running, but its memory cannot be accessed.")
-                    print("  If RPCS3 runs as administrator, run this program as administrator too.")
-                elif state == "no-game":
-                    print("  RPCS3 is running - start Uncharted 3.")
-                elif state == "not-loaded":
-                    print("  The game is running WITHOUT the patch.")
-                    if ensure_patch(rpcs3):
-                        print(f"  The '{PATCH_NAME}' patch has been enabled in the RPCS3 config.")
-                    print("  Close RPCS3, start it again and load the game.")
-                elif state == "other":
-                    print("  A different mouse patch is active. Disable other mouse patches in the")
-                    print(f"  RPCS3 patch manager, keep only '{PATCH_NAME}', then restart the game.")
-                elif state == "active":
-                    print("  Patch detected - mouse aim is ACTIVE while the game window has focus.")
+                if state == "active":
                     feeder.attach(mem)
-                if state != "active":
+                    fps, fps_frames, fps_time = 0, mem.frames(), time.time()
+                else:
                     feeder.detach()
+                    if state == "not-loaded":
+                        ensure_patch(rpcs3)      # make sure it is enabled for the next boot
                 last_state = state
             feeder.update_focus(state == "active")
-            if state == "active" and time.time() - last_line > 0.5:
-                mode = "aiming   " if feeder.ads else "free look"
-                sys.stdout.write(f"\r  [{'ACTIVE' if feeder.focused else 'paused'}] {mode}  "
-                                 f"mouse events {feeder.events:8d}  game frames {mem.frames():8d}   ")
-                sys.stdout.flush()
-                last_line = time.time()
-            time.sleep(0.1 if state == "active" else 1.0)
+
+            if state == "active":
+                now = time.time()
+                if now - fps_time >= 1.0:
+                    f = mem.frames()
+                    fps = round((f - fps_frames) / (now - fps_time))
+                    fps_frames, fps_time = f, now
+                fps_text = f"  {C.DIM}·  {fps} FPS{C.RESET}" if fps > 0 else ""
+                if feeder.focused:
+                    mode = "aiming" if feeder.ads else "free look"
+                    status_line(f"{C.GREEN}● Active{C.RESET}  {C.DIM}·{C.RESET}  {mode}{fps_text}")
+                else:
+                    status_line(f"{C.YELLOW}○ Paused{C.RESET}  {C.DIM}·  click into the game window{C.RESET}{fps_text}")
+            else:
+                colour, mark, text = {
+                    "no-rpcs3": (C.DIM, "○", "Waiting for RPCS3..."),
+                    "no-game": (C.DIM, "○", "RPCS3 is open - load Uncharted 3"),
+                    "not-loaded": (C.YELLOW, "●", "Game runs without the patch - restart RPCS3 and load the game"),
+                    "other": (C.RED, "●", "Another mouse patch is active - disable it and restart"),
+                    "no-access": (C.RED, "!", "Cannot read RPCS3 - run this program as administrator"),
+                }[state]
+                status_line(f"{colour}{mark} {text}{C.RESET}")
+            time.sleep(0.1 if state == "active" else 0.5)
     except KeyboardInterrupt:
         pass
     finally:
         feeder.release()
         if mem:
             mem.close()
-        print("\n\n  Stopped.")
-        time.sleep(0.8)
+        if C.RESET:
+            sys.stdout.write("\033[?25h")
+        status_line(f"{C.DIM}Stopped.{C.RESET}\n")
+        time.sleep(0.6)
 
 
 def main():
     if os.name != "nt":
         sys.exit("This program runs on Windows only.")
-    os.system(f"title {APP_NAME} {APP_VERSION}")
+    init_console()
     s = load_settings()
     clear(); header()
     rpcs3 = locate_rpcs3(s)
-    print(f"\n  RPCS3 folder: {rpcs3}")
-    if ensure_patch(rpcs3):
-        print(f"  The '{PATCH_NAME}' patch is installed and enabled.")
-        if find_process()[0]:
-            print("  RPCS3 is already running: close it and start it again so the patch is applied.")
-        else:
-            print("  Ready - start RPCS3 and load the game.")
+    patch = ensure_patch(rpcs3)
     if "--start" in sys.argv:
         run_aim(s, rpcs3)
         return
-    input("\n  Press Enter to continue...")
     while True:
         clear(); header()
+        print_status(rpcs3, patch, s)
         print(f"""
-  1) Instructions
-  2) Settings        (sensitivity {s['sensitivity']}, {s['dpi']} DPI, ADS x{s['ads_multiplier']}, free look x{s['free_look_multiplier']})
-  3) Start mouse aim
-  4) Exit
-""")
-        c = input("  Choose: ").strip()
+  {C.CYAN}1{C.RESET}  Help
+  {C.CYAN}2{C.RESET}  Settings
+  {C.CYAN}3{C.RESET}  Start mouse aim
+  {C.CYAN}4{C.RESET}  Exit""")
+        c = input(f"\n  Select: ").strip()
         if c == "1":
-            show_instructions()
+            show_help()
         elif c == "2":
             settings_menu(s)
         elif c == "3":
