@@ -18,7 +18,7 @@ from ctypes import wintypes
 from pathlib import Path
 
 APP_NAME = "Uncharted Mouse Aim"
-APP_VERSION = "1.2.2"
+APP_VERSION = "1.3.0"
 PATCH_VERSION = "1.0.0"         # bump only when PATCH_WRITES change
 
 # --------------------------------------------------------------------------------------------------
@@ -162,6 +162,8 @@ DEFAULTS = {
     "rpcs3_dir": "",
     "sensitivity": 1.0,
     "dpi": 800,
+    "x_multiplier": 1.0,
+    "y_multiplier": 1.0,
     "free_look_multiplier": 1.0,
     "ads_multiplier": 1.0,
     "invert_y": False,
@@ -187,7 +189,7 @@ def save_settings(s: dict):
 
 
 def degrees_per_count(s: dict, ads: bool = False) -> float:
-    mult = s["ads_multiplier"] if ads else s["free_look_multiplier"]
+    mult = (s["ads_multiplier"] if ads else s["free_look_multiplier"]) * s["x_multiplier"]
     return 0.0005 * FREE_YAW_DEG * s["sensitivity"] * (REFERENCE_DPI / max(1, s["dpi"])) * mult
 
 
@@ -553,8 +555,8 @@ class MouseFeeder:
                         (s["ads_multiplier"] if self.ads else s["free_look_multiplier"])
                     with self.lock:
                         if self.mem is not None:
-                            self.acc_x += dx * k * ex
-                            self.acc_y += (-dy if s["invert_y"] else dy) * k * ey
+                            self.acc_x += dx * k * ex * s["x_multiplier"]
+                            self.acc_y += (-dy if s["invert_y"] else dy) * k * ey * s["y_multiplier"]
                             self.mem.write_totals(round(self.acc_x), round(self.acc_y))
             return 0
         return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
@@ -713,15 +715,17 @@ def settings_menu(s: dict):
         print(f"""
   {C.BOLD}SETTINGS{C.RESET}
 
-  {C.CYAN}1{C.RESET}  Sensitivity            {s['sensitivity']:g}
-  {C.CYAN}2{C.RESET}  Mouse DPI              {s['dpi']}
-  {C.CYAN}3{C.RESET}  Free-look multiplier   {s['free_look_multiplier']:g}
-  {C.CYAN}4{C.RESET}  Aiming multiplier      {s['ads_multiplier']:g}
-  {C.CYAN}5{C.RESET}  Invert Y               {onoff(s['invert_y'])}
-  {C.CYAN}6{C.RESET}  Hide cursor in game    {onoff(s['hide_cursor'])}
+  {C.CYAN}1{C.RESET}  Sensitivity                 {s['sensitivity']:g}
+  {C.CYAN}2{C.RESET}  Mouse DPI                   {s['dpi']}
+  {C.CYAN}3{C.RESET}  Horizontal (X) multiplier   {s['x_multiplier']:g}
+  {C.CYAN}4{C.RESET}  Vertical (Y) multiplier     {s['y_multiplier']:g}
+  {C.CYAN}5{C.RESET}  Free-look multiplier        {s['free_look_multiplier']:g}
+  {C.CYAN}6{C.RESET}  Aiming multiplier           {s['ads_multiplier']:g}
+  {C.CYAN}7{C.RESET}  Invert Y                    {onoff(s['invert_y'])}
+  {C.CYAN}8{C.RESET}  Hide cursor in game         {onoff(s['hide_cursor'])}
   {C.CYAN}0{C.RESET}  Back
 
-  Free look {C.BOLD}{cm_per_360(s):.1f} cm/360{C.RESET}  ·  Aiming {C.BOLD}{cm_per_360(s, True):.1f} cm/360{C.RESET}
+  Horizontal turn: free look {C.BOLD}{cm_per_360(s):.1f} cm/360{C.RESET}  ·  aiming {C.BOLD}{cm_per_360(s, True):.1f} cm/360{C.RESET}
   {C.DIM}Set DPI to your mouse's DPI: the same sensitivity then feels the same at any DPI.{C.RESET}""")
         c = input(f"\n  Select: ").strip()
         if c == "1":
@@ -729,12 +733,16 @@ def settings_menu(s: dict):
         elif c == "2":
             s["dpi"] = int(ask_float("Mouse DPI", s["dpi"], 100, 32000))
         elif c == "3":
-            s["free_look_multiplier"] = ask_float("Free-look multiplier", s["free_look_multiplier"], 0.1, 5)
+            s["x_multiplier"] = ask_float("Horizontal (X) multiplier", s["x_multiplier"], 0.1, 5)
         elif c == "4":
-            s["ads_multiplier"] = ask_float("Aiming multiplier", s["ads_multiplier"], 0.1, 5)
+            s["y_multiplier"] = ask_float("Vertical (Y) multiplier", s["y_multiplier"], 0.1, 5)
         elif c == "5":
-            s["invert_y"] = not s["invert_y"]
+            s["free_look_multiplier"] = ask_float("Free-look multiplier", s["free_look_multiplier"], 0.1, 5)
         elif c == "6":
+            s["ads_multiplier"] = ask_float("Aiming multiplier", s["ads_multiplier"], 0.1, 5)
+        elif c == "7":
+            s["invert_y"] = not s["invert_y"]
+        elif c == "8":
             s["hide_cursor"] = not s["hide_cursor"]
         elif c in ("0", ""):
             save_settings(s)
