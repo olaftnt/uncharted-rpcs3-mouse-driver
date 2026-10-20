@@ -52,4 +52,12 @@ If you want to dig into the game code yourself, the `decomp` folder has my Ghidr
 1. Import your own decrypted `EBOOT.elf` into Ghidra (language `PowerPC:BE:64:A2ALT-32addr`).
 2. Add the `decomp` folder in the Script Manager and run `ApplyUC3Annotations`. It checks the ELF hash first.
 
-Fan project, not affiliated with Naughty Dog, Sony or RPCS3.
+## Legal and copyright
+
+- **No game content.** This repository and its releases contain no code, executables, assets, keys or decrypted files from Uncharted 3 or any other Sony software. Everything here is original work: the mouse driver, the patch instructions and the Ghidra notes.
+- **Bring your own copy.** To use the patch or the Ghidra notes you need your own legally purchased copy of the game, dumped and decrypted yourself. Nothing here helps with obtaining, decrypting or sharing game files.
+- **Trademarks.** *Uncharted* is a trademark of Sony Interactive Entertainment, and the game is developed by Naughty Dog. RPCS3 is an independent open-source project. Their names are used only to describe compatibility.
+- **Not affiliated.** This is a non-commercial fan project. It is not affiliated with, endorsed by or supported by Sony Interactive Entertainment, Naughty Dog or the RPCS3 team.
+- **No warranty.** The software is provided "as is". Use it at your own risk.
+
+If you are a rights holder and believe something here should not be published, please open an issue and it will be reviewed and removed if needed.
