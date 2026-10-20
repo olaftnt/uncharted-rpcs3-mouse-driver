@@ -18,7 +18,7 @@ from ctypes import wintypes
 from pathlib import Path
 
 APP_NAME = "Uncharted Mouse Aim"
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.3.1"
 PATCH_VERSION = "1.0.0"         # bump only when PATCH_WRITES change
 
 # --------------------------------------------------------------------------------------------------
@@ -424,7 +424,8 @@ class RAWINPUTHEADER(ctypes.Structure):
 
 
 class RAWMOUSE(ctypes.Structure):
-    _fields_ = [("usFlags", wintypes.USHORT), ("usButtonFlags", wintypes.USHORT),
+    # Windows aligns the button union to 4 bytes: usButtonFlags is at offset 4, not 2
+    _fields_ = [("usFlags", wintypes.USHORT), ("_pad", wintypes.USHORT), ("usButtonFlags", wintypes.USHORT),
                 ("usButtonData", wintypes.USHORT), ("ulRawButtons", wintypes.ULONG),
                 ("lLastX", wintypes.LONG), ("lLastY", wintypes.LONG), ("ulExtraInformation", wintypes.ULONG)]
 
