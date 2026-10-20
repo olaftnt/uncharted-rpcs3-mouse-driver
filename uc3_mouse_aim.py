@@ -18,7 +18,8 @@ from ctypes import wintypes
 from pathlib import Path
 
 APP_NAME = "UC3 Mouse Aim"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
+PATCH_VERSION = "1.0.0"         # bump only when PATCH_WRITES change
 
 # --------------------------------------------------------------------------------------------------
 # Game patch (Uncharted 3, update 1.19 executable)
@@ -260,7 +261,7 @@ def locate_rpcs3(settings: dict) -> Path:
 def patch_yaml_block() -> str:
     lines = [f"  {PATCH_NAME}:", "    Games:", f'      "{PATCH_TITLE}":']
     lines += [f"        {serial}: [ {ver} ]" for serial, ver in PATCH_SERIALS]
-    lines += [f"    Author: olaftnt", f'    Notes: "{PATCH_NOTES}"', f"    Patch Version: {APP_VERSION}", "    Patch:"]
+    lines += [f"    Author: olaftnt", f'    Notes: "{PATCH_NOTES}"', f"    Patch Version: {PATCH_VERSION}", "    Patch:"]
     lines += [f"      - [ be32, 0x{a:08x}, 0x{v:08x} ] # {c}" for a, v, c in PATCH_WRITES]
     return "\n".join(lines) + "\n"
 
@@ -320,6 +321,17 @@ def enable_patch(rpcs3: Path) -> bool:
         return False
     cfg.write_text(_upsert_entry(text, block), encoding="utf-8", newline="\n")
     return True
+
+
+def ensure_patch(rpcs3: Path) -> bool:
+    """Install and enable the patch. Returns True on success; prints the error otherwise."""
+    try:
+        install_patch(rpcs3)
+        enable_patch(rpcs3)
+        return True
+    except Exception as e:
+        print(f"  ! Could not write the RPCS3 patch files: {e}")
+        return False
 
 
 # --------------------------------------------------------------------------------------------------
@@ -602,12 +614,13 @@ INSTRUCTIONS = f"""
   HOW TO SET IT UP
   ----------------
   1. Install the Uncharted 3 update 1.19 in RPCS3 (the patch targets that executable).
-  2. Put this program into your RPCS3 folder (next to rpcs3.exe) and run it.
-     It adds the "{PATCH_NAME}" patch to patches/imported_patch.yml and enables it
-     in the patch manager. RPCS3's "Download latest patches" does not touch that file.
-  3. Start the game from RPCS3. If it was already running when the patch was
-     installed, stop it and start it again - patches are applied only at boot.
-  4. Choose "Start mouse aim" in this menu. The status line shows ACTIVE while
+  2. Close all running RPCS3 windows.
+  3. Put this program next to rpcs3.exe and run it. It installs the "{PATCH_NAME}"
+     patch and enables it in the RPCS3 config. If the game is ever started without
+     the patch, the program enables it again and asks you to restart RPCS3.
+  4. Start RPCS3 and load the game. Check that the patch is ticked in
+     Manage > Game Patches.
+  5. Choose "Start mouse aim" in this menu. The status line shows ACTIVE while
      the game window has focus. Leave this window open while you play.
 
   CONTROLS
@@ -730,8 +743,9 @@ def run_aim(s: dict, rpcs3: Path):
                     print("  RPCS3 is running - start Uncharted 3.")
                 elif state == "not-loaded":
                     print("  The game is running WITHOUT the patch.")
-                    print("  Stop the game in RPCS3 and start it again so the patch is applied.")
-                    print(f"  (Patch manager: '{PATCH_NAME}' must be ticked for your game.)")
+                    if ensure_patch(rpcs3):
+                        print(f"  The '{PATCH_NAME}' patch has been enabled in the RPCS3 config.")
+                    print("  Close RPCS3, start it again and load the game.")
                 elif state == "other":
                     print("  A different mouse patch is active. Disable other mouse patches in the")
                     print(f"  RPCS3 patch manager, keep only '{PATCH_NAME}', then restart the game.")
@@ -767,16 +781,12 @@ def main():
     clear(); header()
     rpcs3 = locate_rpcs3(s)
     print(f"\n  RPCS3 folder: {rpcs3}")
-    try:
-        added = install_patch(rpcs3)
-        enabled = enable_patch(rpcs3)
-        if added or enabled:
-            print(f"  The '{PATCH_NAME}' patch was installed and enabled.")
-            print("  If the game is already running, restart it so the patch is applied.")
+    if ensure_patch(rpcs3):
+        print(f"  The '{PATCH_NAME}' patch is installed and enabled.")
+        if find_process()[0]:
+            print("  RPCS3 is already running: close it and start it again so the patch is applied.")
         else:
-            print(f"  The '{PATCH_NAME}' patch is installed.")
-    except Exception as e:
-        print(f"  ! Could not install the patch automatically: {e}")
+            print("  Ready - start RPCS3 and load the game.")
     if "--start" in sys.argv:
         run_aim(s, rpcs3)
         return

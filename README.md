@@ -5,10 +5,13 @@ Raw mouse aiming for **Uncharted 3: Drake's Deception** (update 1.19) on **RPCS3
 ## Install
 
 1. Download `UC3MouseAim.exe` from [Releases](../../releases) and put it next to `rpcs3.exe`.
-2. Run it. It installs and enables the **UC3 Mouse Aim** patch.
-3. Restart the emulator and load the game. Make sure the patch is enabled in **Manage → Game Patches**.
-4. For keyboard controls, use RPCS3's normal keyboard-to-pad mapping.
-5. In the program, choose **3) Start mouse aim** and keep its window open.
+2. Stop all running RPCS3 processes.
+3. Run `UC3MouseAim.exe`. It installs the **UC3 Mouse Aim** patch, enables it in the RPCS3 config, and shows *Ready - start RPCS3 and load the game*.
+4. Start RPCS3 and load the game. Make sure the patch is enabled in **Manage → Game Patches**.
+5. For keyboard controls, use RPCS3's normal keyboard-to-pad mapping.
+6. In the program, choose **3) Start mouse aim** and keep its window open.
+
+If the game is ever started without the patch, the program enables it again by itself. It then asks you to restart RPCS3.
 
 Supported versions: BCES01175/01176/01670/01692, BCUS98233/99086, BCJS37004, BCAS25009/25014, NPEA00422, NPUA80858, all on update 1.19.
 
@@ -16,7 +19,7 @@ Supported versions: BCES01175/01176/01670/01692, BCUS98233/99086, BCJS37004, BCA
 
 | Status | Fix |
 |---|---|
-| `running WITHOUT the patch` | Restart the game. Check that *UC3 Mouse Aim* is ticked in *Manage → Game Patches*. |
+| `running WITHOUT the patch` | The patch has been re-enabled. Close RPCS3, start it again and load the game. |
 | `memory cannot be accessed` | RPCS3 runs as administrator. Run this program as administrator too. |
 
 ## How it works
