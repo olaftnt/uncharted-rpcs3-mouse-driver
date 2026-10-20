@@ -1,0 +1,756 @@
+{
+  "format": 1,
+  "program": {
+    "title": "Uncharted 3: Drake's Deception",
+    "version": "1.19 (BCES01175 and other 1.19 serials)",
+    "file": "EBOOT.elf (decrypted EBOOT.BIN)",
+    "size": 18778872,
+    "md5": "94cd514e7490e53ec4a39122611c5606",
+    "sha256": "aac4faa63ab1387e8aaa0b8e9e80ee87ac4ae61e0b40292f7aa7401df7b3f50a",
+    "rpcs3_ppu_hash": "PPU-02a88c3c6cd415b0bb81f1606bc743835881a4ba",
+    "ghidra_language": "PowerPC:BE:64:A2ALT-32addr"
+  },
+  "structs": {
+    "PlayerInputState": {
+      "size": 288,
+      "fields": [
+        {
+          "offset": 48,
+          "size": 4,
+          "type": "int",
+          "name": "nController_id"
+        },
+        {
+          "offset": 152,
+          "size": 8,
+          "type": "longlong",
+          "name": "llDamping_counter_x"
+        },
+        {
+          "offset": 160,
+          "size": 8,
+          "type": "longlong",
+          "name": "llDamping_counter_y"
+        },
+        {
+          "offset": 168,
+          "size": 4,
+          "type": "float",
+          "name": "flPrev_move_x"
+        },
+        {
+          "offset": 172,
+          "size": 4,
+          "type": "float",
+          "name": "flPrev_move_y"
+        },
+        {
+          "offset": 176,
+          "size": 4,
+          "type": "float",
+          "name": "flCamera_yaw"
+        },
+        {
+          "offset": 180,
+          "size": 4,
+          "type": "float",
+          "name": "flCamera_pitch"
+        },
+        {
+          "offset": 184,
+          "size": 4,
+          "type": "float",
+          "name": "flCamera_input_magnitude"
+        },
+        {
+          "offset": 188,
+          "size": 4,
+          "type": "float",
+          "name": "flMove_input_magnitude"
+        },
+        {
+          "offset": 204,
+          "size": 1,
+          "type": "bool",
+          "name": "fIs_moving"
+        },
+        {
+          "offset": 208,
+          "size": 4,
+          "type": "float",
+          "name": "flMove_x"
+        },
+        {
+          "offset": 212,
+          "size": 4,
+          "type": "float",
+          "name": "flMove_y"
+        },
+        {
+          "offset": 220,
+          "size": 4,
+          "type": "float",
+          "name": "flPrev_camera_yaw"
+        },
+        {
+          "offset": 224,
+          "size": 4,
+          "type": "float",
+          "name": "flPrev_camera_pitch"
+        },
+        {
+          "offset": 228,
+          "size": 4,
+          "type": "float",
+          "name": "flMove_magnitude_threshold"
+        }
+      ]
+    },
+    "RawGamepadInput": {
+      "size": 96,
+      "fields": [
+        {
+          "offset": 0,
+          "size": 4,
+          "type": "float",
+          "name": "flLeft_x_deadzoned"
+        },
+        {
+          "offset": 4,
+          "size": 4,
+          "type": "float",
+          "name": "flLeft_y_deadzoned"
+        },
+        {
+          "offset": 8,
+          "size": 4,
+          "type": "float",
+          "name": "flRight_x_deadzoned"
+        },
+        {
+          "offset": 12,
+          "size": 4,
+          "type": "float",
+          "name": "flRight_y_deadzoned"
+        },
+        {
+          "offset": 16,
+          "size": 4,
+          "type": "float",
+          "name": "flLeft_x_raw"
+        },
+        {
+          "offset": 20,
+          "size": 4,
+          "type": "float",
+          "name": "flLeft_y_raw"
+        },
+        {
+          "offset": 24,
+          "size": 4,
+          "type": "float",
+          "name": "flRight_x_raw"
+        },
+        {
+          "offset": 28,
+          "size": 4,
+          "type": "float",
+          "name": "flRight_y_raw"
+        }
+      ]
+    }
+  },
+  "functions": [
+    {
+      "address": "00013184",
+      "name": "AxisAngleToQuaternion",
+      "plate_comment": "A-PATCH-V4 CONTEXT (2026-07-26)\n\nHelper used from update_camera_state after register-bypass: applies angle via sin/cos-like calls to 0xD574B4 into a vector/quat accumulate path.\n\nA-Patch-V4 Post-Pipeline Linearize patched:\n- 0x131DC: bl 0xD574B4 (sin) -> nop  (leave f1 = angle; small-angle sin≈x)\n- 0x1320C: bl 0xD574B4 (cos) -> b 0xDA0730 cave forcing f1=1.0\n\nRESULT: Patches confirmed in RAM via Frida. Did NOT stop free-look asymmetric drift. Treat as ruled-out / low-value for the return-to-origin bug (may still affect large per-frame angles). CAUTION: this helper may be shared — watch for side effects.",
+      "comments": [
+        {
+          "offset": 88,
+          "type": "pre",
+          "text": "A-V4: Post-Pipeline sin->nop was HARMFUL (breaks R(-t)R(t)=I). Wave2 RESTORES bl 0xd574b4. FAIL/KEEP history in patch.yml."
+        },
+        {
+          "offset": 136,
+          "type": "pre",
+          "text": "A-V4 Post-Pipeline: cos->b 0xDA0730 (f1=1.0). Did not fix drift."
+        }
+      ]
+    },
+    {
+      "address": "000195e4",
+      "name": "QuaternionMultiply"
+    },
+    {
+      "address": "0003f9d4",
+      "name": "Engine_UpdateSimulationFrame"
+    },
+    {
+      "address": "00080ce0",
+      "name": "GetCameraRotationDelta"
+    },
+    {
+      "address": "001ba780",
+      "name": "Matrix4x4_CopyCameraTransform"
+    },
+    {
+      "address": "001ba824",
+      "name": "CameraControlBalance_CalculateTransform",
+      "plate_comment": "VTABLE free-look update_normal_camera (xref 0x011853F8).\n\nA-PATCH-V4 Wave3.1 (2026-07-26) LIVE+patch.yml:\n- REAL free-look path (GenCodeRun update_camera_state idle; DA06E8 telem=0).\n- SAFE caves @ 0xDA0460 (yaw) / 0xDA0490 (pitch): raw mouse*sens @ DA0500/504 * DA0624,\n  clear buffer, rejoin bl 0x13184. Hooks @ 0x1BB0AC / 0x1BB0E8.\n- DO NOT use DA0740 (game string data; lost on reboot).\n- GenCodeRun DA0410: stick:=0 (caves-only look).\n- Spring kill @ 0x1BAD6C/A0 + fmr; shotgun fmuls/fmadds; NOP 3rd bl 0x13184 @ 0x1BC04C.\nRequires mouse driver writing DA0500. Test reverse 1:1 in gameplay."
+    },
+    {
+      "address": "001c294c",
+      "name": "CameraEdgeAim_CalculateTransform",
+      "plate_comment": "A-PATCH-V4 Wave2 TARGET (2026-07-26)\n\nCaller of update_camera_state @ 0x1C2CC4. AFTER that call this function still:\n- pitch auto-clamp via bl 0x13184 @ 0x1C2E20 (gated @ 0x1C2D80)\n- spring/damper @ 0x1C2F2C (FUN_00954578) applied via bl 0x1764C @ 0x1C2FB0\n- update_camera_target_lock_wrapper @ 0x1C3284\n- distance spring @ 0x1C3400\n\nWave2 patches skip/neutralize these. Prior Mega (free-look absolute angles) was LIVE and still failed 1:1 reverse — so parent post-process is next hypothesis.\n\nAlso: Post-Pipeline sin/cos break in 0x13184 was HARMFUL to GenCodeRun path; Wave2 restores."
+    },
+    {
+      "address": "001c9af0",
+      "name": "CameraControlFollow_IsActive"
+    },
+    {
+      "address": "001cbbc0",
+      "name": "CameraControlFollow_SetupActiveState"
+    },
+    {
+      "address": "001d4868",
+      "name": "CameraControlFollow_CalculateTransform",
+      "comments": [
+        {
+          "offset": 3868,
+          "type": "eol",
+          "text": "CameraShake_ApplyAllEffectors: free-look camera gets shake/noise added here"
+        }
+      ]
+    },
+    {
+      "address": "001d5d58",
+      "name": "CameraControlFollow_UpdateTargetAutoFollow_tentative"
+    },
+    {
+      "address": "001e2f4c",
+      "name": "CameraControlZoom_IsActive"
+    },
+    {
+      "address": "001e8874",
+      "name": "CameraControlZoom_SetupActiveState"
+    },
+    {
+      "address": "001e96f0",
+      "name": "CameraControlZoom_Update"
+    },
+    {
+      "address": "001e9dbc",
+      "name": "CameraControlZoom_CalculateTransform",
+      "comments": [
+        {
+          "offset": 1936,
+          "type": "eol",
+          "text": "CameraShake_ApplyAllEffectors: ADS (zoom) camera gets shake/noise added here"
+        }
+      ]
+    },
+    {
+      "address": "0028f800",
+      "name": "load_camera_config_from_save",
+      "plate_comment": "[100% sure game tested]\nLoads settings from the save file / config, such as the aiming sensitivity slider (which is stored into offset 0x1628 of PlayerInputState) and invert look flags."
+    },
+    {
+      "address": "002986c0",
+      "name": "Coop_ModeGate_A_tentative",
+      "plate_comment": "Patched by 'Solo Co-Op Patch' (projectREz). The patch fakes a multiplayer/co-op session for one player: global flags at 0x01244480..83 (g_SessionState+0x7c..0x7f) forced to 1, flag checks at 0x298a84/0x3197e8 removed, slot table (11 x 0x488) reports the local player and 'ready' flags, Session_CheckCoopStart sets this+0x698 = 1."
+    },
+    {
+      "address": "00318dac",
+      "name": "Coop_ModeGate_B_tentative",
+      "plate_comment": "Patched by 'Solo Co-Op Patch' (projectREz). The patch fakes a multiplayer/co-op session for one player: global flags at 0x01244480..83 (g_SessionState+0x7c..0x7f) forced to 1, flag checks at 0x298a84/0x3197e8 removed, slot table (11 x 0x488) reports the local player and 'ready' flags, Session_CheckCoopStart sets this+0x698 = 1."
+    },
+    {
+      "address": "003554dc",
+      "name": "Session_InitState_tentative",
+      "plate_comment": "Patched by 'Solo Co-Op Patch' (projectREz). The patch fakes a multiplayer/co-op session for one player: global flags at 0x01244480..83 (g_SessionState+0x7c..0x7f) forced to 1, flag checks at 0x298a84/0x3197e8 removed, slot table (11 x 0x488) reports the local player and 'ready' flags, Session_CheckCoopStart sets this+0x698 = 1."
+    },
+    {
+      "address": "00355710",
+      "name": "Session_FindLocalPlayerSlot_tentative",
+      "plate_comment": "Patched by 'Solo Co-Op Patch' (projectREz). The patch fakes a multiplayer/co-op session for one player: global flags at 0x01244480..83 (g_SessionState+0x7c..0x7f) forced to 1, flag checks at 0x298a84/0x3197e8 removed, slot table (11 x 0x488) reports the local player and 'ready' flags, Session_CheckCoopStart sets this+0x698 = 1."
+    },
+    {
+      "address": "003557b4",
+      "name": "Session_ResetSlotFlags_tentative",
+      "plate_comment": "Patched by 'Solo Co-Op Patch' (projectREz). The patch fakes a multiplayer/co-op session for one player: global flags at 0x01244480..83 (g_SessionState+0x7c..0x7f) forced to 1, flag checks at 0x298a84/0x3197e8 removed, slot table (11 x 0x488) reports the local player and 'ready' flags, Session_CheckCoopStart sets this+0x698 = 1."
+    },
+    {
+      "address": "0036ccc8",
+      "name": "Session_CheckCoopStart_tentative",
+      "plate_comment": "Patched by 'Solo Co-Op Patch' (projectREz). The patch fakes a multiplayer/co-op session for one player: global flags at 0x01244480..83 (g_SessionState+0x7c..0x7f) forced to 1, flag checks at 0x298a84/0x3197e8 removed, slot table (11 x 0x488) reports the local player and 'ready' flags, Session_CheckCoopStart sets this+0x698 = 1."
+    },
+    {
+      "address": "003d5510",
+      "name": "WeaponRecoil_UpdateCameraKick",
+      "plate_comment": "A-PATCH-V4 CONTEXT (2026-07-26, updated)\n\nFREE-LOOK / HIP-FIRE camera. Called FIRST from update_camera_state.\n\nFAILED PATCHES (verified in RAM, no 1:1 reverse fix):\n- Aiming powf/accel NOPs (0x3D63C8/650C/6538) — GenCodeRun overwrites 0xB0/B4\n- Post-pipeline linearize (blends/cubic/sin-cos) — still drifted\n- FreeLook Yaw-Scale Neutralize @ 0x3D5794 (f27=1.0) — verified c37e8078 LIVE, still drifted\n\nNEXT HYPOTHESIS (mega-patch targets):\n1) PRNG noise FUN_0071ab84 in rate lerp — non-deterministic, breaks reverse\n2) Decay FUN_00954578 + smoothing pfVar11[5] blends\n3) Scales f24/f25 from character state\n4) CRITICAL: after GenCodeRun register-bypass, update_camera_state STILL applies\n   absolute free-look angles camera_state[0]/[0x10] via bl 0x13184 @ 0x3D7EC4/0x3D7EEC\n   — free-look integrator still rotates the quaternion every frame\n\nSee A-Patch-V4 FreeLook Mega-Neutralize in patch.yml.",
+      "return_type": "void",
+      "parameters": [
+        {
+          "name": "camera_state",
+          "type": "float *"
+        }
+      ],
+      "comments": [
+        {
+          "offset": 0,
+          "type": "eol",
+          "text": "Główny punkt wejścia update_normal_camera (Free Look / Hip-Fire Camera)"
+        },
+        {
+          "offset": 588,
+          "type": "pre",
+          "text": "A-V4: fabs(flCamera_yaw @ PlayerInput+0xB0). PREV frame / GenCodeRun raw*sens — feeds free-look rate scale, not aiming powf."
+        },
+        {
+          "offset": 644,
+          "type": "pre",
+          "text": "A-V4: yaw-magnitude scale f27=lerp(1,cfg+0x28,sat(|yaw|*k)). PATCH FreeLook Yaw-Scale Neutralize: fmadds->lfs f27,-0x7f88(r30) => f27=1.0. Best remaining drift hypothesis after powf/accel + post-pipeline failed."
+        },
+        {
+          "offset": 2112,
+          "type": "eol",
+          "text": "Etykieta LAB_003d5d50: Zapis końcowych kątów i wyliczenie Delta Yaw / Delta Pitch"
+        }
+      ],
+      "variables": [
+        {
+          "name": "current_yaw",
+          "type": "float",
+          "storage": "(unique, 0x5b300, 4)"
+        },
+        {
+          "name": "current_pitch",
+          "type": "float",
+          "storage": "(unique, 0x54100, 4)"
+        },
+        {
+          "name": "camera_config_offset",
+          "type": "int",
+          "storage": "(register, 0x1c, 4)"
+        },
+        {
+          "name": "player_controller_ptr",
+          "type": "int *",
+          "storage": "(register, 0x1c, 4)"
+        },
+        {
+          "name": "character_state_ptr",
+          "type": "int *",
+          "storage": "(register, 0x1c, 4)"
+        }
+      ]
+    },
+    {
+      "address": "003d5f88",
+      "name": "filter_stick_direction_reversal_and_deadzone",
+      "plate_comment": "[NOP PATCHED IN GENCODERUN] apply_input_damping\nReturns immediately to bypass momentum and smoothing.\nThis ensures instantaneous acceleration and 1:1 raw mouse translation.",
+      "return_type": "undefined",
+      "parameters": [
+        {
+          "name": "player_input_state",
+          "type": "undefined"
+        },
+        {
+          "name": "out_x",
+          "type": "float *"
+        },
+        {
+          "name": "out_y",
+          "type": "float *"
+        }
+      ],
+      "comments": [
+        {
+          "offset": 0,
+          "type": "eol",
+          "text": "apply_input_damping: Wygładzanie wygaszania ruchu i bezwładności kamery"
+        }
+      ]
+    },
+    {
+      "address": "003d61d4",
+      "name": "update_aiming_camera_inputs",
+      "plate_comment": "A-PATCH-V4 CONTEXT (2026-07-26)\n\nAIMING / SHARED yaw-pitch preprocess. Called SECOND from update_camera_state after update_normal_camera.\n\nWHAT WE PATCHED HERE (loaded in RAM, verified via Frida — did NOT fix free-look drift):\n- 0x3D63C8: beq turn-accel gate -> unconditional b (skip accel block)\n- 0x3D650C / 0x3D6538: bl math_powf -> nop (ABI: f1=|delta| stays = identity curve)\n\nWHY IT DID NOT HELP: Live GenCodeRun ALREADY overwrites 0xB0/0xB4 with raw*sens at 0x3D6550, then again at 0x118/0x11C and f31/f30 register-bypass (0x3D7C50/0x3D7CA0). So neutralizing powf/accel in this function is redundant when GenCodeRun is active — curve output is discarded before final camera use.\n\nFree-look still reads 0xB0 NEXT frame inside update_normal_camera and applies its own |yaw|->f27 scale (see plate on 0x3D5510).",
+      "return_type": "undefined",
+      "parameters": [
+        {
+          "name": "player_input_state",
+          "type": "PlayerInputState *"
+        },
+        {
+          "name": "raw_gamepad_data",
+          "type": "RawGamepadInput *"
+        }
+      ],
+      "comments": [
+        {
+          "offset": 100,
+          "type": "eol",
+          "text": "Retrieve global camera settings struct for this controller"
+        },
+        {
+          "offset": 152,
+          "type": "eol",
+          "text": "Process raw X axis with inner deadzone and outer limit scaling"
+        },
+        {
+          "offset": 324,
+          "type": "eol",
+          "text": "Apply input damping/smoothing (momentum) to inputs"
+        },
+        {
+          "offset": 500,
+          "type": "pre",
+          "text": "A-V4 FAILED-FOR-FREELOOK: turn-accel gate beq->b (skip). Verified in RAM. No free-look return fix (GenCodeRun discards curve)."
+        },
+        {
+          "offset": 540,
+          "type": "eol",
+          "text": "Zadanie 2: Turn Acceleration trigger. bgt cr7, ... Branches if input exceeds threshold. NOP this to disable outer ramp-up."
+        },
+        {
+          "offset": 808,
+          "type": "eol",
+          "text": "Apply exponential sensitivity curve (powf) to Yaw using exponent from camera_config+0x38"
+        },
+        {
+          "offset": 824,
+          "type": "pre",
+          "text": "A-V4 FAILED-FOR-FREELOOK: bl math_powf yaw->nop. Redundant under GenCodeRun."
+        },
+        {
+          "offset": 824,
+          "type": "eol",
+          "text": "Zadanie 1: math_powf (Yaw Response Curve). To disable, NOP this call or replace with fmr."
+        },
+        {
+          "offset": 844,
+          "type": "eol",
+          "text": "Apply exponential sensitivity curve (powf) to Pitch using exponent from camera_config+0x38"
+        },
+        {
+          "offset": 868,
+          "type": "pre",
+          "text": "A-V4 FAILED-FOR-FREELOOK: bl math_powf pitch->nop. Same — no free-look fix."
+        },
+        {
+          "offset": 868,
+          "type": "eol",
+          "text": "Zadanie 1: math_powf (Pitch Response Curve). To disable, NOP this call or replace with fmr."
+        }
+      ],
+      "variables": [
+        {
+          "name": "left_y_processed",
+          "type": "double",
+          "storage": "(register, 0x4010, 8)"
+        },
+        {
+          "name": "left_x_processed",
+          "type": "double",
+          "storage": "(register, 0x4010, 8)"
+        },
+        {
+          "name": "camera_config",
+          "type": "int",
+          "storage": "(register, 0x1c, 4)"
+        },
+        {
+          "name": "left_x_raw_temp",
+          "type": "float",
+          "storage": "(unique, 0x54100, 4)"
+        },
+        {
+          "name": "deadzone_x",
+          "type": "float",
+          "storage": "(unique, 0x54100, 4)"
+        },
+        {
+          "name": "abs_right_x",
+          "type": "double",
+          "storage": "(register, 0x40b0, 8)"
+        },
+        {
+          "name": "inner_accel_threshold",
+          "type": "double",
+          "storage": "(register, 0x40c0, 8)"
+        },
+        {
+          "name": "invert_x",
+          "type": "int",
+          "storage": "(unique, 0x5b300, 4)"
+        },
+        {
+          "name": "outer_limit_const",
+          "type": "float",
+          "storage": "(unique, 0x54100, 4)"
+        },
+        {
+          "name": "right_y_raw_temp",
+          "type": "float",
+          "storage": "(unique, 0x54100, 4)"
+        },
+        {
+          "name": "right_x_double",
+          "type": "double",
+          "storage": "(register, 0x4030, 8)"
+        }
+      ]
+    },
+    {
+      "address": "003d65a8",
+      "name": "AimCamera_ClampPitchLimits"
+    },
+    {
+      "address": "003d7064",
+      "name": "AimCamera_ClampYawLimits"
+    },
+    {
+      "address": "003d7454",
+      "name": "update_camera_state",
+      "plate_comment": "A-PATCH-V4 CONTEXT (updated 2026-07-26)\n\nParent: update_normal_camera then update_aiming_camera_inputs, then final speeds/quat.\n\nGenCodeRun: mem 0x118/11C + register f31/f30 raw*sens @ 0x3D7C50/CA0 — INSUFFICIENT alone.\n\nFAILED (live-verified, no 1:1 reverse):\n- V4 Aim Curve (powf/accel NOPs)\n- V4 Post-Pipeline Linearize (blends/cubic/sin-cos)\n- V4 FreeLook Yaw-Scale Neutralize f27=1.0 @ 0x3D5794\n\nMEGA-PATCH (A-Patch-V4 FreeLook Mega-Neutralize) hits MANY sites at once:\n1) CRITICAL @ 0x3D7E78/7E7C/7EC4/7EEC: zero+NOP absolute free-look angle apply AFTER GenCodeRun\n2) update_normal_camera: scales f24/f25/f27=1; PRNG->0; decay->0; instant smooth; zero out 0/0x10/0xC/0x1C; kill noise loop\n\nRestart game for patch.yml (GDB live-write may E03 while running).",
+      "comments": [
+        {
+          "offset": 656,
+          "type": "eol",
+          "text": "This loads the sensitivity from the global camera config object (offset 0x1628)"
+        },
+        {
+          "offset": 1712,
+          "type": "pre",
+          "text": "A-V4 Post-Pipeline: NOP blend +0x144. Loaded, did NOT fix free-look asymmetry."
+        },
+        {
+          "offset": 1724,
+          "type": "pre",
+          "text": "A-V4 Post-Pipeline: NOP blend +0x148. Loaded, did NOT fix free-look asymmetry."
+        },
+        {
+          "offset": 1924,
+          "type": "pre",
+          "text": "A-V4 Post-Pipeline: cubic*speed -> fmr f31,f30. Loaded, did NOT fix free-look asymmetry."
+        },
+        {
+          "offset": 2044,
+          "type": "pre",
+          "text": "GenCodeRun REGISTER BYPASS: f31=raw*sens (yaw). Live patch — still insufficient alone for 1:1 reverse."
+        },
+        {
+          "offset": 2124,
+          "type": "pre",
+          "text": "GenCodeRun REGISTER BYPASS: f30=raw*sens (pitch). Pair with 0x3D7C50."
+        },
+        {
+          "offset": 2596,
+          "type": "pre",
+          "text": "A-V4 MEGA: CRITICAL — loads absolute free-look yaw camera_state[0] AFTER GenCodeRun delta apply. Patched to lfs 0.0; bl 0x13184 @ 0x3D7EC4 also NOP. Best remaining explanation for drift despite raw bypass."
+        },
+        {
+          "offset": 2672,
+          "type": "pre",
+          "text": "A-V4 MEGA: NOP — was applying absolute free-look yaw via 0x13184 after GenCodeRun."
+        }
+      ]
+    },
+    {
+      "address": "003d841c",
+      "name": "update_target_lock_aim_assist",
+      "plate_comment": "AIM ASSIST / TARGET LOCK MAGNETISM. Finds nearest lockable target in range, ramps in/out a rotation-speed pull toward it. Key struct offsets (param_1 = camera/aim state struct, r31): +0x108/+0x10c ramp factor X/Y (0..1, eases in/out of lock); +0x110/+0x114 FINAL assist speed X/Y (Maximum target speeds, added to camera rotation); +0x120/+0x121 has-target / is-locked flags; +0x138 locked target id; +0x144/+0x148 accumulator (m_targetLockSpeedX/Y) that builds up the pull. To disable the magnetism (Zadanie 6), patch the final fmuls before the two stfs at 0x3D9914/0x3D9918 (which produce +0x110/+0x114) into fsubs fD,fD,fD (self-zero): 0x003D9914 fmuls f0,f0,f12 -> fsubs f0,f0,f0 (0xEC000332 -> 0xEC000028); 0x003D9918 fmuls f13,f13,f11 -> fsubs f13,f13,f13 (0xEDAD02F2 -> 0xEDAD6828). This forces the assist contribution to 0.0 every frame while leaving lock-on bookkeeping/state/HUD untouched (low risk, no branch/cave needed).",
+      "comments": [
+        {
+          "offset": 5368,
+          "type": "eol",
+          "text": "ZADANIE 6 candidate: fmuls f0,f0,f12 -> replace with fsubs f0,f0,f0 (0xEC000028) to zero the aim-assist X speed"
+        },
+        {
+          "offset": 5372,
+          "type": "eol",
+          "text": "ZADANIE 6 candidate: fmuls f13,f13,f11 -> replace with fsubs f13,f13,f13 (0xEDAD6828) to zero the aim-assist Y speed"
+        }
+      ]
+    },
+    {
+      "address": "003d9a00",
+      "name": "update_camera_target_lock_wrapper"
+    },
+    {
+      "address": "0041e9f4",
+      "name": "get_camera_config"
+    },
+    {
+      "address": "0041eb00",
+      "name": "GetPlayerController"
+    },
+    {
+      "address": "006aa374",
+      "name": "Session_GetPlayerObject_tentative",
+      "plate_comment": "Patched by 'Solo Co-Op Patch' (projectREz). The patch fakes a multiplayer/co-op session for one player: global flags at 0x01244480..83 (g_SessionState+0x7c..0x7f) forced to 1, flag checks at 0x298a84/0x3197e8 removed, slot table (11 x 0x488) reports the local player and 'ready' flags, Session_CheckCoopStart sets this+0x698 = 1."
+    },
+    {
+      "address": "0071ab84",
+      "name": "RandomFloat_PRNG"
+    },
+    {
+      "address": "00817ab8",
+      "name": "CameraInput_GetRightStickX_Inverted"
+    },
+    {
+      "address": "00817b38",
+      "name": "prepare_camera_inputs_and_deadzones",
+      "plate_comment": "[100% sure game tested] Prepares inputs for the free camera. Looks up analog sticks by hash (e.g. 0x89335b6e for right stick) and passes them to apply_global_deadzone_and_clamp."
+    },
+    {
+      "address": "00817d68",
+      "name": "Lerp8f_out_a_b_t"
+    },
+    {
+      "address": "00819a38",
+      "name": "CameraManager_GetForViewport"
+    },
+    {
+      "address": "0081a020",
+      "name": "CameraManager_CreateControl"
+    },
+    {
+      "address": "0081c240",
+      "name": "CameraManager_DispatchCameraUpdate"
+    },
+    {
+      "address": "0081cc78",
+      "name": "CameraManager_InitCameraEntry"
+    },
+    {
+      "address": "0081cfe0",
+      "name": "CameraManager_UpdateActiveCameras"
+    },
+    {
+      "address": "00824290",
+      "name": "CameraShake_ApplyAllEffectors",
+      "plate_comment": "Applies every active camera shake / noise effector to a camera transform (pos vec4 + quat vec4).\nArgs: f1 = time/strength, r3 = out transform, r6 = player index, stack+0x50 = input transform.\nThree effector lists per player (TOC-0x7fec stride 0x20 / TOC-0x7ff0 stride 0x20 / TOC-0x7ff4 stride 0x4c), each entry's vfunc0 adds its offset; list C skips finished ones (vfunc +0x10).\ng_CameraDebug_DisableShake (0x13257f3) != 0 -> output = input. Patch 'Disable Camera Shake' (0x8242cc lbz -> li r0,1) forces that path.\nCalled at the end of CameraControl*_CalculateTransform: Follow 0x1d5784, Zoom(ADS) 0x1ea54c, Balance 0x1bc2c4 and 7 other camera classes (virtual)."
+    },
+    {
+      "address": "00892650",
+      "name": "scale_analog_deadzone",
+      "plate_comment": "[NOP PATCHED IN GENCODERUN] scale_analog_deadzone\nReturns immediately to bypass inner deadzones and outer limit modifications.\nThis ensures 1:1 raw float injection from the proxy mouse.",
+      "return_type": "undefined",
+      "parameters": [
+        {
+          "name": "raw_value",
+          "type": "double"
+        },
+        {
+          "name": "inner_deadzone",
+          "type": "double"
+        },
+        {
+          "name": "outer_limit",
+          "type": "double"
+        }
+      ],
+      "variables": [
+        {
+          "name": "abs_value",
+          "type": "double",
+          "storage": "(register, 0x40d0, 8)"
+        },
+        {
+          "name": "result",
+          "type": "float",
+          "storage": "(unique, 0x54100, 4)"
+        }
+      ]
+    },
+    {
+      "address": "00893988",
+      "name": "poll_gamepads_cellPadGetData",
+      "plate_comment": "[100% sure game tested] Main gamepad polling function. Calls cellPadGetData. Converts raw 0-255 bytes into floats (-1.0 to 1.0). [NOP PATCHED IN GENCODERUN] Hooked to inject raw Mouse floats directly into the pad_data_struct.",
+      "return_type": "undefined",
+      "parameters": [
+        {
+          "name": "out_pad_data",
+          "type": "int"
+        }
+      ],
+      "comments": [
+        {
+          "offset": 208,
+          "type": "eol",
+          "text": "<- HERE: Poll gamepad button/analog inputs via cellPadGetData"
+        }
+      ],
+      "variables": [
+        {
+          "name": "port_index_2",
+          "type": "int",
+          "storage": "(register, 0x44, 4)"
+        },
+        {
+          "name": "pad_data_struct",
+          "type": "float *",
+          "storage": "(register, 0x3c, 4)"
+        },
+        {
+          "name": "port_index",
+          "type": "int",
+          "storage": "(register, 0x34, 4)"
+        },
+        {
+          "name": "global_pad_base",
+          "type": "int",
+          "storage": "(register, 0x1c, 4)"
+        },
+        {
+          "name": "pad_state",
+          "type": "int",
+          "storage": "(stack, 0xfffffffffffffeec, 4)"
+        }
+      ]
+    },
+    {
+      "address": "008948d8",
+      "name": "apply_global_deadzone_and_clamp",
+      "plate_comment": "[NOP PATCHED IN GENCODERUN] Global Deadzone & Outer Limit function.\nReturns immediately after copying raw variables to output vector, bypassing Pitagoras length checks, deadzones, and outer limits (limit float 1.0).\nThis unlocks raw input for the Normal Camera."
+    },
+    {
+      "address": "00954578",
+      "name": "GetFrameDeltaTime"
+    },
+    {
+      "address": "0096e3f4",
+      "name": "DumpActiveCameraMatrix"
+    },
+    {
+      "address": "00d562e8",
+      "name": "math_powf",
+      "plate_comment": "math_powf — A-PATCH-V4 CONTEXT\n\nCalled from update_aiming_camera_inputs @ 0x3D650C (yaw) and 0x3D6538 (pitch) with base=|delta|, exponent=camera_config+0x38.\n\nv4 NOPs those two call sites (exact identity via PPU SVR4: f1 is both arg and return). Verified loaded. Did NOT fix free-look drift because GenCodeRun overwrites post-curve 0xB0/0xB4 with raw*sens before final use."
+    }
+  ],
+  "labels": [
+    {
+      "address": "011d27d0",
+      "name": "TOC_BASE"
+    },
+    {
+      "address": "013257f2",
+      "name": "g_CameraDebug_PrintShake"
+    },
+    {
+      "address": "013257f3",
+      "name": "g_CameraDebug_DisableShake"
+    },
+    {
+      "address": "01244404",
+      "name": "g_SessionState_tentative"
+    },
+    {
+      "address": "01244480",
+      "name": "g_SessionState_coopFlags"
+    }
+  ]
+}

@@ -45,4 +45,11 @@ build.bat
 
 To run without building, use `python uc3_mouse_aim.py` (Python 3.9+, no dependencies). The patch is also included as a YAML file in this repository, for importing by hand in *Manage → Game Patches*.
 
+## Ghidra
+
+If you want to dig into the game code yourself, the `decomp` folder has my Ghidra work on the 1.19 executable: function names, comments, variables and structs for the camera, aiming and input code. It contains no game code.
+
+1. Import your own decrypted `EBOOT.elf` into Ghidra (language `PowerPC:BE:64:A2ALT-32addr`).
+2. Add the `decomp` folder in the Script Manager and run `ApplyUC3Annotations`. It checks the ELF hash first.
+
 Fan project, not affiliated with Naughty Dog, Sony or RPCS3.
