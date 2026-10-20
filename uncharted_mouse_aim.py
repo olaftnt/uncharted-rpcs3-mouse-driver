@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-UC3 Mouse Aim - native-feeling mouse aiming for Uncharted 3: Drake's Deception on RPCS3.
+Uncharted Mouse Aim - native-feeling mouse aiming for Uncharted on RPCS3 (currently Uncharted 3).
 
 Run it from the RPCS3 folder (or anywhere - it will ask for the RPCS3 folder once). It installs the
 companion game patch, waits until the patched game is running, then feeds raw mouse movement into
@@ -17,8 +17,8 @@ import threading
 from ctypes import wintypes
 from pathlib import Path
 
-APP_NAME = "UC3 Mouse Aim"
-APP_VERSION = "1.2.1"
+APP_NAME = "Uncharted Mouse Aim"
+APP_VERSION = "1.2.2"
 PATCH_VERSION = "1.0.0"         # bump only when PATCH_WRITES change
 
 # --------------------------------------------------------------------------------------------------
@@ -32,9 +32,9 @@ PATCH_SERIALS = [
     ("BCUS98233", "01.19"), ("BCJS37004", "02.17"), ("NPEA00422", "01.19"), ("NPUA80858", "01.19"),
     ("BCUS99086", "01.19"), ("BCAS25014", "01.19"), ("BCAS25009", "01.19"),
 ]
-PATCH_NOTES = ("Raw mouse aiming for the " + APP_NAME + " tool: removes stick deadzones, response curves, "
+PATCH_NOTES = ("Raw mouse aiming for the UC3 Mouse Aim tool: removes stick deadzones, response curves, "
                "turn acceleration, axis snapping, aim assist and camera smoothing, and adds a per-frame "
-               "mouse counter. Use together with the " + APP_NAME + " program.")
+               "mouse counter. Use together with the UC3 Mouse Aim program.")
 
 # (address, value, comment) - big-endian 32-bit writes
 PATCH_WRITES = [
@@ -156,7 +156,8 @@ def app_dir() -> Path:
     return Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
 
 
-SETTINGS_FILE = app_dir() / "uc3_mouse_aim_settings.json"
+SETTINGS_FILE = app_dir() / "uncharted_mouse_aim_settings.json"
+OLD_SETTINGS_FILE = app_dir() / "uc3_mouse_aim_settings.json"   # before 1.2.2
 DEFAULTS = {
     "rpcs3_dir": "",
     "sensitivity": 1.0,
@@ -170,8 +171,9 @@ DEFAULTS = {
 
 def load_settings() -> dict:
     s = dict(DEFAULTS)
+    src = SETTINGS_FILE if SETTINGS_FILE.exists() or not OLD_SETTINGS_FILE.exists() else OLD_SETTINGS_FILE
     try:
-        s.update(json.loads(SETTINGS_FILE.read_text(encoding="utf-8")))
+        s.update(json.loads(src.read_text(encoding="utf-8")))
     except Exception:
         pass
     return s
@@ -559,9 +561,9 @@ class MouseFeeder:
 
     def _loop(self):
         hinst = kernel32.GetModuleHandleW(None)
-        wc = WNDCLASSW(lpfnWndProc=self._proc, hInstance=hinst, lpszClassName="UC3MouseAimRawInput")
+        wc = WNDCLASSW(lpfnWndProc=self._proc, hInstance=hinst, lpszClassName="UnchartedMouseAimRawInput")
         user32.RegisterClassW(ctypes.byref(wc))
-        hwnd = user32.CreateWindowExW(0, "UC3MouseAimRawInput", "UC3MouseAimRawInput", 0, 0, 0, 0, 0,
+        hwnd = user32.CreateWindowExW(0, "UnchartedMouseAimRawInput", "UnchartedMouseAimRawInput", 0, 0, 0, 0, 0,
                                       None, None, hinst, None)
         rid = RAWINPUTDEVICE(0x01, 0x02, RIDEV_INPUTSINK, hwnd)
         user32.RegisterRawInputDevices(ctypes.byref(rid), 1, ctypes.sizeof(rid))
@@ -620,7 +622,7 @@ def clear():
 
 def header():
     print()
-    print(f"  {C.BOLD}{C.CYAN}UC3 MOUSE AIM{C.RESET}  {C.DIM}v{APP_VERSION}{C.RESET}")
+    print(f"  {C.BOLD}{C.CYAN}UNCHARTED MOUSE AIM{C.RESET}  {C.DIM}v{APP_VERSION}{C.RESET}")
     print(f"  {C.DIM}Raw mouse aiming for Uncharted 3 on RPCS3{C.RESET}")
     print(f"  {C.DIM}{'─' * 60}{C.RESET}")
 

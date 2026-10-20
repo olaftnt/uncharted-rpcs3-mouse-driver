@@ -4,6 +4,7 @@ build/
 dist/
 *.spec
 uc3_mouse_aim_settings.json
+uncharted_mouse_aim_settings.json
 
 # never commit game files or Ghidra databases
 *.elf

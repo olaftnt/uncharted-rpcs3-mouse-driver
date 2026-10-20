@@ -4,9 +4,9 @@ Raw mouse aiming for **Uncharted 3: Drake's Deception** (update 1.19) on **RPCS3
 
 ## Install
 
-1. Download `UC3MouseAim.exe` from [Releases](../../releases) and put it next to `rpcs3.exe`.
+1. Download `UnchartedMouseAim.exe` from [Releases](../../releases) and put it next to `rpcs3.exe`.
 2. Stop all running RPCS3 processes.
-3. Run `UC3MouseAim.exe`. It installs the **UC3 Mouse Aim** patch and enables it in the RPCS3 config.
+3. Run `UnchartedMouseAim.exe`. It installs the **UC3 Mouse Aim** patch and enables it in the RPCS3 config.
 4. Start RPCS3 and load the game. Make sure the patch is enabled in **Manage → Game Patches**.
 5. For keyboard controls, use RPCS3's normal keyboard-to-pad mapping.
 6. In the program, choose **3) Start mouse aim** and keep its window open.
@@ -43,7 +43,7 @@ pip install pyinstaller
 build.bat
 ```
 
-To run without building, use `python uc3_mouse_aim.py` (Python 3.9+, no dependencies). The patch is also included as a YAML file in this repository, for importing by hand in *Manage → Game Patches*.
+To run without building, use `python uncharted_mouse_aim.py` (Python 3.9+, no dependencies). The patch is also included as a YAML file in this repository, for importing by hand in *Manage → Game Patches*.
 
 ## Game support
 
