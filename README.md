@@ -1,4 +1,4 @@
-![Uncharted 3 RPCS3 Mouse Driver](assets/banner.jpg)
+![Uncharted RPCS3 Mouse Driver](assets/banner.jpg)
 
 Raw mouse aiming for **Uncharted 3: Drake's Deception** (update 1.19) on **RPCS3**. It replaces the emulated right stick with direct mouse input: no deadzone, no acceleration, no smoothing, and the same sensitivity at any frame rate.
 
@@ -44,6 +44,14 @@ build.bat
 ```
 
 To run without building, use `python uc3_mouse_aim.py` (Python 3.9+, no dependencies). The patch is also included as a YAML file in this repository, for importing by hand in *Manage → Game Patches*.
+
+## Game support
+
+| Game | Status |
+|---|---|
+| Uncharted: Drake's Fortune | Planned |
+| Uncharted 2: Among Thieves | Planned |
+| Uncharted 3: Drake's Deception (update 1.19) | Supported, not fully tested |
 
 ## Ghidra
 
