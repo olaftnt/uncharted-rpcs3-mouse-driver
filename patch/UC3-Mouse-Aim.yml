@@ -1,0 +1,111 @@
+Version: 1.2
+
+PPU-02a88c3c6cd415b0bb81f1606bc743835881a4ba:
+  UC3 Mouse Aim:
+    Games:
+      "Uncharted 3: Drake's Deception":
+        BCES01175: [ 01.19 ]
+        BCES01176: [ 01.19 ]
+        BCES01670: [ 01.19 ]
+        BCES01692: [ 01.19 ]
+        BCUS98233: [ 01.19 ]
+        BCJS37004: [ 02.17 ]
+        NPEA00422: [ 01.19 ]
+        NPUA80858: [ 01.19 ]
+        BCUS99086: [ 01.19 ]
+        BCAS25014: [ 01.19 ]
+        BCAS25009: [ 01.19 ]
+    Author: olaftnt
+    Notes: "Raw mouse aiming for the UC3 Mouse Aim tool: removes stick deadzones, response curves, turn acceleration, axis snapping, aim assist and camera smoothing, and adds a per-frame mouse counter. Use together with the UC3 Mouse Aim program."
+    Patch Version: 1.0.0
+    Patch:
+      - [ be32, 0x00892650, 0x4e800020 ] # scale_analog_deadzone: blr
+      - [ be32, 0x003d5f88, 0x4e800020 ] # filter_stick_direction_reversal_and_deadzone: blr
+      - [ be32, 0x00894934, 0x4850bb0c ] # right stick clamp bypass hook
+      - [ be32, 0x00da0440, 0x2c070004 ] # CC2: cmpwi r7, 4
+      - [ be32, 0x00da0444, 0x4182000c ] # CC2: beq +0x0c
+      - [ be32, 0x00da0448, 0xedad637a ] # CC2: fmadds f13, f13, f13, f12
+      - [ be32, 0x00da044c, 0x4baf44ec ] # CC2: b 0x00894938
+      - [ be32, 0x00da0450, 0xebc1fff0 ] # CC2: ld r30, -0x10(r1)
+      - [ be32, 0x00da0454, 0x4e800020 ] # CC2: blr
+      - [ be32, 0x00817d68, 0x80050000 ] # Lerp8f (camera blend -> instant): lwz r0, 0(r5)
+      - [ be32, 0x00817d6c, 0x90030000 ] # Lerp8f (camera blend -> instant): stw r0, 0(r3)
+      - [ be32, 0x00817d70, 0x80050004 ] # Lerp8f (camera blend -> instant): lwz r0, 4(r5)
+      - [ be32, 0x00817d74, 0x90030004 ] # Lerp8f (camera blend -> instant): stw r0, 4(r3)
+      - [ be32, 0x00817d78, 0x80050008 ] # Lerp8f (camera blend -> instant): lwz r0, 8(r5)
+      - [ be32, 0x00817d7c, 0x90030008 ] # Lerp8f (camera blend -> instant): stw r0, 8(r3)
+      - [ be32, 0x00817d80, 0x8005000c ] # Lerp8f (camera blend -> instant): lwz r0, 12(r5)
+      - [ be32, 0x00817d84, 0x9003000c ] # Lerp8f (camera blend -> instant): stw r0, 12(r3)
+      - [ be32, 0x00817d88, 0x80050010 ] # Lerp8f (camera blend -> instant): lwz r0, 16(r5)
+      - [ be32, 0x00817d8c, 0x90030010 ] # Lerp8f (camera blend -> instant): stw r0, 16(r3)
+      - [ be32, 0x00817d90, 0x80050014 ] # Lerp8f (camera blend -> instant): lwz r0, 20(r5)
+      - [ be32, 0x00817d94, 0x90030014 ] # Lerp8f (camera blend -> instant): stw r0, 20(r3)
+      - [ be32, 0x00817d98, 0x80050018 ] # Lerp8f (camera blend -> instant): lwz r0, 24(r5)
+      - [ be32, 0x00817d9c, 0x90030018 ] # Lerp8f (camera blend -> instant): stw r0, 24(r3)
+      - [ be32, 0x00817da0, 0x8005001c ] # Lerp8f (camera blend -> instant): lwz r0, 28(r5)
+      - [ be32, 0x00817da4, 0x9003001c ] # Lerp8f (camera blend -> instant): stw r0, 28(r3)
+      - [ be32, 0x00817da8, 0x4e800020 ] # Lerp8f (camera blend -> instant): blr
+      - [ be32, 0x003d63c8, 0x480000b0 ] # aim inputs: skip 3-zone turn acceleration curve (b 0x3d6478)
+      - [ be32, 0x003d6480, 0x48000064 ] # aim inputs: skip axis snap (b 0x3d64e4)
+      - [ be32, 0x003d650c, 0x60000000 ] # aim inputs: nop bl math_powf (yaw) -> f1 stays |yaw|
+      - [ be32, 0x003d6538, 0x60000000 ] # aim inputs: nop bl math_powf (pitch) -> f1 stays |pitch|
+      - [ be32, 0x003d773c, 0x480000dc ] # update_camera_state: skip aim friction slowdown (f31 = 1.0)
+      - [ be32, 0x003d78d8, 0x60000000 ] # update_camera_state: drop pitch-dependent yaw factor (linear)
+      - [ be32, 0x003d7904, 0x480001ec ] # update_camera_state: skip aim-assist spring (b 0x3d7af0)
+      - [ be32, 0x003d7bd8, 0xffe0f090 ] # update_camera_state: fmr f31,f30 (drop cubic pitch-dependent yaw factor)
+      - [ be32, 0x001cf040, 0xc01f6864 ] # free look yaw: use min speed (this+0x6864) instead of ramped speed (this+0x6b2c)
+      - [ be32, 0x00894210, 0x4850c250 ] # poll_gamepads hook -> mouse counter cave 0xDA0460
+      - [ be32, 0x00da0460, 0x3d600145 ] # counter cave: lis r11,0x0145
+      - [ be32, 0x00da0464, 0x396bff00 ] # counter cave: addi r11,r11,-0x100
+      - [ be32, 0x00da0468, 0x818b0018 ] # counter cave: lwz r12,0x18(r11)
+      - [ be32, 0x00da046c, 0x398c0001 ] # counter cave: addi r12,r12,1
+      - [ be32, 0x00da0470, 0x918b0018 ] # counter cave: stw r12,0x18(r11)
+      - [ be32, 0x00da0474, 0xc06b001c ] # counter cave: lfs f3,0x1c(r11)
+      - [ be32, 0x00da0478, 0x3d800138 ] # counter cave: lis r12,0x0138
+      - [ be32, 0x00da047c, 0x818cf724 ] # counter cave: lwz r12,-0x8dc(r12)
+      - [ be32, 0x00da0480, 0x2c0c0000 ] # counter cave: cmpwi r12,0
+      - [ be32, 0x00da0484, 0x41820024 ] # counter cave: beq L_dt
+      - [ be32, 0x00da0488, 0x818c0064 ] # counter cave: lwz r12,0x64(r12)
+      - [ be32, 0x00da048c, 0x2c0c0000 ] # counter cave: cmpwi r12,0
+      - [ be32, 0x00da0490, 0x41820018 ] # counter cave: beq L_dt
+      - [ be32, 0x00da0494, 0xc08c0014 ] # counter cave: lfs f4,0x14(r12)
+      - [ be32, 0x00da0498, 0xc0ab0030 ] # counter cave: lfs f5,0x30(r11)
+      - [ be32, 0x00da049c, 0xff842800 ] # counter cave: fcmpu cr7,f4,f5
+      - [ be32, 0x00da04a0, 0x419c0008 ] # counter cave: blt cr7 L_dt
+      - [ be32, 0x00da04a4, 0xfc602090 ] # counter cave: fmr f3,f4
+      - [ be32, 0x00da04a8, 0x812b0000 ] # counter cave: lwz r9,0(r11)
+      - [ be32, 0x00da04ac, 0x814b0008 ] # counter cave: lwz r10,8(r11)
+      - [ be32, 0x00da04b0, 0x912b0008 ] # counter cave: stw r9,8(r11)
+      - [ be32, 0x00da04b4, 0x7d2a4850 ] # counter cave: subf r9,r10,r9
+      - [ be32, 0x00da04b8, 0x7d2907b4 ] # counter cave: extsw r9,r9
+      - [ be32, 0x00da04bc, 0xf92b0020 ] # counter cave: std r9,0x20(r11)
+      - [ be32, 0x00da04c0, 0xc80b0020 ] # counter cave: lfd f0,0x20(r11)
+      - [ be32, 0x00da04c4, 0xfc00069c ] # counter cave: fcfid f0
+      - [ be32, 0x00da04c8, 0xfc000018 ] # counter cave: frsp f0
+      - [ be32, 0x00da04cc, 0xc04b0010 ] # counter cave: lfs f2,16(r11)
+      - [ be32, 0x00da04d0, 0xec0000b2 ] # counter cave: fmuls f0,f0,f2
+      - [ be32, 0x00da04d4, 0xec001824 ] # counter cave: fdivs f0,f0,f3
+      - [ be32, 0x00da04d8, 0x812b0004 ] # counter cave: lwz r9,4(r11)
+      - [ be32, 0x00da04dc, 0x814b000c ] # counter cave: lwz r10,12(r11)
+      - [ be32, 0x00da04e0, 0x912b000c ] # counter cave: stw r9,12(r11)
+      - [ be32, 0x00da04e4, 0x7d2a4850 ] # counter cave: subf r9,r10,r9
+      - [ be32, 0x00da04e8, 0x7d2907b4 ] # counter cave: extsw r9,r9
+      - [ be32, 0x00da04ec, 0xf92b0020 ] # counter cave: std r9,0x20(r11)
+      - [ be32, 0x00da04f0, 0xc82b0020 ] # counter cave: lfd f1,0x20(r11)
+      - [ be32, 0x00da04f4, 0xfc200e9c ] # counter cave: fcfid f1
+      - [ be32, 0x00da04f8, 0xfc200818 ] # counter cave: frsp f1
+      - [ be32, 0x00da04fc, 0xc04b0014 ] # counter cave: lfs f2,20(r11)
+      - [ be32, 0x00da0500, 0xec2100b2 ] # counter cave: fmuls f1,f1,f2
+      - [ be32, 0x00da0504, 0xec211824 ] # counter cave: fdivs f1,f1,f3
+      - [ be32, 0x00da0508, 0xd0130018 ] # counter cave: stfs f0,0x18(r19)
+      - [ be32, 0x00da050c, 0xd033001c ] # counter cave: stfs f1,0x1c(r19)
+      - [ be32, 0x00da0510, 0xd0130008 ] # counter cave: stfs f0,8(r19)
+      - [ be32, 0x00da0514, 0xd033000c ] # counter cave: stfs f1,0xc(r19)
+      - [ be32, 0x00da0518, 0x813e807c ] # counter cave: lwz r9,-0x7f84(r30)
+      - [ be32, 0x00da051c, 0x4baf3cf8 ] # counter cave: b 0x894214
+      - [ be32, 0x0144ff10, 0x3a03126f ] # buffer init: scale_x
+      - [ be32, 0x0144ff14, 0x3a03126f ] # buffer init: scale_y
+      - [ be32, 0x0144ff1c, 0x3d088889 ] # buffer init: fallback dt 1/30
+      - [ be32, 0x0144ff30, 0x3b03126f ] # buffer init: min dt
+      - [ be32, 0x001d34ec, 0x60000000 ] # free look: camera spring omega always 550/s (snap), velocity reset -> no lag
+      - [ be32, 0x001cef84, 0x4800002c ] # free look: always manual yaw path (no axis dominance when |Y| >> |X|)
