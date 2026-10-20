@@ -1,4 +1,4 @@
-# Uncharted 3 RPCS3 Mouse Driver
+![Uncharted 3 RPCS3 Mouse Driver](assets/banner.jpg)
 
 Raw mouse aiming for **Uncharted 3: Drake's Deception** (update 1.19) on **RPCS3**. It replaces the emulated right stick with direct mouse input: no deadzone, no acceleration, no smoothing, and the same sensitivity at any frame rate.
 

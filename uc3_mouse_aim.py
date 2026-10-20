@@ -18,7 +18,7 @@ from ctypes import wintypes
 from pathlib import Path
 
 APP_NAME = "UC3 Mouse Aim"
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.2.1"
 PATCH_VERSION = "1.0.0"         # bump only when PATCH_WRITES change
 
 # --------------------------------------------------------------------------------------------------
