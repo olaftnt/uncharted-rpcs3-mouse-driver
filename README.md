@@ -6,7 +6,7 @@ Raw mouse aiming for **Uncharted 3: Drake's Deception** (update 1.19) on **RPCS3
 
 1. Download `UC3MouseAim.exe` from [Releases](../../releases) and put it next to `rpcs3.exe`.
 2. Stop all running RPCS3 processes.
-3. Run `UC3MouseAim.exe`. It installs the **UC3 Mouse Aim** patch, enables it in the RPCS3 config, and shows *Ready - start RPCS3 and load the game*.
+3. Run `UC3MouseAim.exe`. It installs the **UC3 Mouse Aim** patch and enables it in the RPCS3 config.
 4. Start RPCS3 and load the game. Make sure the patch is enabled in **Manage → Game Patches**.
 5. For keyboard controls, use RPCS3's normal keyboard-to-pad mapping.
 6. In the program, choose **3) Start mouse aim** and keep its window open.
@@ -32,7 +32,7 @@ Supported versions: BCES01175/01176/01670/01692, BCUS98233/99086, BCJS37004, BCA
 
 **Program:**
 - Reads Windows Raw Input (unaccelerated sensor counts) and adds each event to a running total in game memory. A running total cannot drop or double movement between frames.
-- The right mouse button switches to the ADS multiplier.
+- While the right mouse button is held, it uses the separate aiming sensitivity from the program's settings.
 - Checks the game's code to tell whether the game was booted with the patch.
 - Input is sent only while the game window has focus. Then the cursor is hidden and kept in the window's centre.
 
